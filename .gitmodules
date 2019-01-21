@@ -1,0 +1,6 @@
+[submodule "actions/todo.txt-graph"]
+	path = actions/todo.txt-graph
+	url = git@github.com:timpulver/todo.txt-graph.git
+[submodule "actions/graph"]
+	path = actions/graph
+	url = git@github.com:timpulver/todo.txt-graph.git
