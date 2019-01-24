@@ -4,6 +4,3 @@
 [submodule "actions/graph"]
 	path = actions/graph
 	url = git@github.com:timpulver/todo.txt-graph.git
-[submodule "actions/watch"]
-	path = actions/watch
-	url = https://github.com/Kynda/todot.txt-watch.git

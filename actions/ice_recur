@@ -41,7 +41,7 @@ $opts = Optimist::options do
 
   Where [timing] is a sequence of timing specifiers seperated by " ; ".  Each timing specifier makes the item more specific.
 
-  The starting date is entirely optional; if specified it 
+  The starting date is entirely optional; if specified it
 
   Timing Specifiers
   -----------------
@@ -414,7 +414,7 @@ elsif $opts[:show_next]
   recur_entries.each do |recur|
     schedstr, taskstr = recur.strip.split(%r{\s+-\s+}, 2)
     if schedstr && taskstr
-      puts "Schedule: #{schedstr} -- Schedule In English: #{make_schedule( schedstr ).to_s} -- Next Day: #{make_schedule( schedstr ).next_occurrence.strftime("%Y-%m-%d")} -- Text: #{taskstr}"
+      #puts "Schedule: #{schedstr} -- Schedule In English: #{make_schedule( schedstr ).to_s} -- Next Day: #{make_schedule( schedstr ).next_occurrence.strftime("%Y-%m-%d")} -- Text: #{taskstr}"
     end
   end
 elsif $opts[:check]
@@ -452,21 +452,24 @@ else
 
   # Make a backup
   todo_file = File.join(ENV['TODO_DIR'], 'todo.txt')
+  done_file = File.join(ENV['TODO_DIR'], 'todo.done.txt')
   orig_todo_data = File.read(todo_file)
   orig_todo_time = File.mtime(todo_file).to_i
 
   begin
     todo_list = File.readlines(todo_file)
+    done_list = File.readlines(done_file)
     todo_list_new = []
 
     # Get just the non-complete items; strip out tags, projects,
     # dates and key/value tags
     todo_list_trimmed = todo_list.map { |item| [task_to_text(item), item] }
+    done_list_trimmed = done_list.map { |item| [task_to_text(item), item] }
 
-    end_day = Date.today
+    end_time = Time.now
+
     if File.exists?(completed_file) && ! $opts[:force]
-      start_day = File.mtime(completed_file).to_date + 1
-
+      start_time = File.mtime(completed_file)
       #unless $opts[:dry_run]
         #if start_day > end_day
           #puts "ice_recur has already run today; if you think this is in error, use the -f option.  Exiting."
@@ -474,21 +477,26 @@ else
         #end
       #end
     else
-      start_day = Date.today
+      start_time = Time.new(Date.today.year,Date.today.mon,Date.today.day)
     end
-    cur_day = start_day
+
+    cur_day = start_time.to_date
+    end_day = end_time.to_date
 
     while cur_day <= end_day
       puts "Working on day #{cur_day.to_s}:"
 
       recur_entries.each do |recur|
         schedstr, taskstr = recur.strip.split(%r{\s+-\s+}, 2)
-        if make_schedule( schedstr ).occurs_on?(cur_day)
+        if make_schedule( schedstr ).occurs_between?(start_time, end_time)
           puts "- Recur matches #{cur_day.to_s}: #{schedstr} --- #{taskstr}"
           # Find all non-completed items that match this one
           found_task = todo_list_trimmed.select { |x,y| x == task_to_text(taskstr) }
+          found_done_task = done_list_trimmed.select { |x,y| y.include?(task_to_text(taskstr)) && y.include?(cur_day.to_s) }
           if found_task.length > 0
             puts "    - Duplicate task exists: #{found_task.first[1].chomp}"
+          elsif found_done_task.length > 0
+            puts "    - Task already completed: #{found_done_task.first[1].chomp}"
           else
             puts "    -  No duplicate found for #{taskstr}"
             puts "    -  Adding #{taskstr}"
